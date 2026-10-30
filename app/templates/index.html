@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if f.q %}{{ f.q }} — {% endif %}Керек</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{%- macro icon(kind) -%}
+  {%- if kind == "pants" -%}<svg viewBox="0 0 24 24"><path d="M7 3h10l1.5 18h-4L12 10l-2.5 11h-4z"/><path d="M7 6h10"/></svg>
+  {%- elif kind == "tshirt" -%}<svg viewBox="0 0 24 24"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c0 2-1.5 3-4 3S8 5 8 3z"/></svg>
+  {%- elif kind == "jacket" -%}<svg viewBox="0 0 24 24"><path d="M9 3l3 3 3-3 5 3v15h-4v-8l-1 8H9l-1-8v8H4V6z"/><path d="M12 6v15"/></svg>
+  {%- elif kind == "shoes" -%}<svg viewBox="0 0 24 24"><path d="M3 17V9h5l2 3 6 1.5c3 .8 5 1.8 5 3.5v1z"/><path d="M3 17h18"/></svg>
+  {%- else -%}<svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>
+  {%- endif -%}
+{%- endmacro -%}
+<div class="wrap">
+  <header>
+    <a class="logo" href="/"><b>К</b>Керек</a>
+    <div class="rate">
+      {% if cny %}1 ¥ = {{ "%.2f"|format(cny) }} ₸{% endif %}{% if usd %} · 1 $ = {{ "%.1f"|format(usd) }} ₸{% endif %}<br>
+      {{ "курс Нацбанка РК" if rates_live else "примерный курс, Нацбанк недоступен" }}
+    </div>
+  </header>
+
+  <form class="search" method="get" action="/">
+    <div class="row">
+      <div class="q">
+        <input id="q" name="q" value="{{ f.q }}" placeholder="Что ищем? Например: мужские штаны карго" autocomplete="off" autofocus>
+        <button class="btn" type="submit">Найти</button>
+      </div>
+    </div>
+    <div class="row filters">
+      <select id="category" name="category" aria-label="Категория">
+        {% for key, label in categories.items() %}<option value="{{ key }}" {{ "selected" if f.category == key }}>{{ label }}</option>{% endfor %}
+      </select>
+      <select id="size" name="size" aria-label="Размер">
+        <option value="">Любой размер</option>
+        {% for s in sizes %}<option value="{{ s }}" {{ "selected" if f.size == s }}>{{ s }}</option>{% endfor %}
+      </select>
+      <input id="max_price" name="max_price" inputmode="numeric" placeholder="Цена до, ₸" value="{{ f.max_price or '' }}" aria-label="Максимальная цена в тенге">
+      <select id="sort" name="sort" aria-label="Сортировка">
+        {% for key, label in sorts.items() %}<option value="{{ key }}" {{ "selected" if f.sort == key }}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="hints">Часто ищут:
+      <a href="/?q=мужские+штаны">мужские штаны</a>
+      <a href="/?q=пуховик">пуховик</a>
+      <a href="/?q=кроссовки">кроссовки</a>
+      <a href="/?q=рюкзак">рюкзак</a>
+    </div>
+  </form>
+
+  {% if demo %}
+  <p class="note">Демо-режим: показываю тестовые товары. Чтобы искать по AliExpress, добавь ключи в <code>.env</code> (см. README).</p>
+  {% endif %}
+
+  <div class="meta">
+    <h1>{{ f.q or "Популярное" }}</h1>
+    <span>{{ products|length }} {{ "товар" if products|length % 10 == 1 and products|length % 100 != 11 else "товаров" }}{% if markup %} · цены с наценкой {{ markup|round|int }}%{% endif %}</span>
+  </div>
+
+  {% if products %}
+  <div class="grid">
+    {% for p in products %}
+    <a class="card" href="{{ p.url }}" target="_blank" rel="noopener nofollow">
+      <div class="pic">{% if p.image %}<img src="{{ p.image }}" alt="" loading="lazy">{% else %}{{ icon(p.kind) }}{% endif %}</div>
+      <div class="body">
+        <div class="price">{{ "{:,}".format(p.price_kzt|int).replace(",", " ") }} ₸<span class="orig">{{ "%g"|format(p.price) }} {{ {"CNY": "¥", "USD": "$"}.get(p.currency, p.currency) }}</span></div>
+        <div class="title">{{ p.title }}</div>
+        <div class="sub">
+          {% if p.rating %}<span>★ {{ p.rating }}</span>{% endif %}
+          {% if p.orders %}<span>{{ "{:,}".format(p.orders|int).replace(",", " ") }} заказов</span>{% endif %}
+          <span>{{ p.source }}</span>
+        </div>
+        {% if p.sizes %}<div class="sizes">{% for s in p.sizes %}<span class="{{ 'on' if s == f.size }}">{{ s }}</span>{% endfor %}</div>{% endif %}
+        <span class="go">Открыть в магазине →</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><b>Ничего не нашлось</b>Попробуй убрать фильтр по размеру или поднять цену.</div>
+  {% endif %}
+</div>
+</body>
+</html>

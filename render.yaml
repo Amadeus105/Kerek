@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: kerek
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: MARKUP_PERCENT
+        value: "0"
+      - key: ALI_APP_KEY
+        sync: false
+      - key: ALI_APP_SECRET
+        sync: false
+      - key: ALI_TRACKING_ID
+        sync: false
+      - key: DEEPL_KEY
+        sync: false
